@@ -195,3 +195,25 @@ export const ippApi = {
       body: JSON.stringify(settings),
     }),
 };
+
+export async function downloadBinaryExport(url: string, filename: string): Promise<void> {
+  const res = await fetch(url, {
+    credentials: 'include',
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    throw new Error(`Export download failed (${res.status})`);
+  }
+  const buffer = await res.arrayBuffer();
+  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+}
+

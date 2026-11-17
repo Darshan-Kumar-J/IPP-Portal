@@ -22,6 +22,10 @@ import {
   verifyToken,
 } from './server/auth.js';
 import {
+  generateClientPptxBuffer,
+  generateProjectPdfBuffer,
+} from './server/exports.js';
+import {
   ROLE_DEFINITIONS,
   SEED_ACTIVITIES,
   SEED_APIS,
@@ -1508,6 +1512,67 @@ async function startServer() {
       res.json({ settings: store.settings });
     }
   );
+
+  // ------------------------------------------------------------------
+  // Documentation & Client Presentation Exports (PDF & PPTX)
+  // ------------------------------------------------------------------
+  app.get('/api/exports/project-guide.pdf', async (req, res) => {
+    try {
+      const pdfBuffer = await generateProjectPdfBuffer({
+        platforms: store.platforms,
+        apis: store.apis,
+        capabilities: store.capabilities,
+        documents: store.documents,
+        journeys: store.journeys,
+        integrations: store.integrations,
+        users: store.users,
+        roles: ROLE_DEFINITIONS,
+      });
+      const forceOctet = req.query.download === '1';
+      res.setHeader('Content-Type', forceOctet ? 'application/octet-stream' : 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="IPP_Complete_Project_Study_Guide.pdf"'
+      );
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.send(pdfBuffer);
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Failed to generate PDF study guide',
+      });
+    }
+  });
+
+  app.get('/api/exports/client-presentation.pptx', async (_req, res) => {
+    try {
+      const pptxBuffer = await generateClientPptxBuffer({
+        platforms: store.platforms,
+        apis: store.apis,
+        capabilities: store.capabilities,
+        documents: store.documents,
+        journeys: store.journeys,
+        integrations: store.integrations,
+        users: store.users,
+        roles: ROLE_DEFINITIONS,
+      });
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="IPP_Client_Presentation.pptx"'
+      );
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.send(pptxBuffer);
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : 'Failed to generate client PPTX deck',
+      });
+    }
+  });
 
   // ------------------------------------------------------------------
   // Vite Middleware (Dev) or Static Assets (Prod)

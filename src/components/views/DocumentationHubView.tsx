@@ -2,12 +2,16 @@ import React, { useMemo, useState } from 'react';
 import {
   BookOpen,
   CheckCircle2,
+  Download,
   Edit3,
+  FileText,
   History,
   Plus,
+  Presentation,
   Search,
   Trash2,
 } from 'lucide-react';
+import { downloadBinaryExport } from '../../lib/api';
 import type { DocumentEntry, Platform, UserRole } from '../../types/ipp';
 import { ConfirmDialog, EmptyState, MarkdownRenderer, Modal, StatusText } from '../ui/Primitives';
 
@@ -45,6 +49,7 @@ export function DocumentationHubView({
   const [previewInEditor, setPreviewInEditor] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [exportingType, setExportingType] = useState<'pdf' | 'pptx' | null>(null);
 
   const [formState, setFormState] = useState({
     title: '',
@@ -148,16 +153,58 @@ export function DocumentationHubView({
             Author, version, and publish enterprise Markdown technical guides with syntax-highlighted code snippets.
           </p>
         </div>
-        {canWrite && (
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={startCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[#2457D6] text-white hover:bg-[#1d48b8] whitespace-nowrap shrink-0"
+            disabled={exportingType !== null}
+            onClick={async () => {
+              setExportingType('pdf');
+              try {
+                await downloadBinaryExport(
+                  '/api/exports/project-guide.pdf?download=1',
+                  'IPP_Complete_Project_Study_Guide.pdf'
+                );
+              } finally {
+                setExportingType(null);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#101B32] text-[#101B32] dark:text-slate-100 hover:border-[#2457D6] dark:hover:border-[#438BFF] transition-colors whitespace-nowrap shrink-0 disabled:opacity-60"
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Document</span>
+            <FileText className="w-3.5 h-3.5 text-[#2457D6] dark:text-[#438BFF]" />
+            <span>{exportingType === 'pdf' ? 'Generating...' : 'Study Guide PDF'}</span>
+            <Download className="w-3 h-3 text-[#65748B]" />
           </button>
-        )}
+          <button
+            type="button"
+            disabled={exportingType !== null}
+            onClick={async () => {
+              setExportingType('pptx');
+              try {
+                await downloadBinaryExport(
+                  '/api/exports/client-presentation.pptx',
+                  'IPP_Client_Presentation.pptx'
+                );
+              } finally {
+                setExportingType(null);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#101B32] text-[#101B32] dark:text-slate-100 hover:border-[#2457D6] dark:hover:border-[#438BFF] transition-colors whitespace-nowrap shrink-0 disabled:opacity-60"
+          >
+            <Presentation className="w-3.5 h-3.5 text-[#16A477]" />
+            <span>{exportingType === 'pptx' ? 'Generating...' : 'Client Deck PPTX'}</span>
+            <Download className="w-3 h-3 text-[#65748B]" />
+          </button>
+          {canWrite && (
+            <button
+              type="button"
+              onClick={startCreate}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[#2457D6] text-white hover:bg-[#1d48b8] whitespace-nowrap shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Document</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

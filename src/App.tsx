@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Download, FileText, Presentation } from 'lucide-react';
 import { AppShell } from './components/AppShell';
 import { Modal, SkeletonRows, ToastContainer, type ToastMessage } from './components/ui/Primitives';
 import { AdministrationView } from './components/views/AdministrationView';
@@ -12,7 +13,7 @@ import { IntegrationsView } from './components/views/IntegrationsView';
 import { OverviewView } from './components/views/OverviewView';
 import { PlatformCatalogView } from './components/views/PlatformCatalogView';
 import { ProducerWorkspaceView } from './components/views/ProducerWorkspaceView';
-import { ippApi } from './lib/api';
+import { ippApi, downloadBinaryExport } from './lib/api';
 import type {
   ActivityEvent,
   ApiEndpoint,
@@ -69,6 +70,7 @@ export default function App() {
   // Utility Modals
   const [helpOpen, setHelpOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [exportingType, setExportingType] = useState<'pdf' | 'pptx' | null>(null);
 
   const pushToast = useCallback((type: ToastMessage['type'], title: string, message?: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -542,6 +544,84 @@ export default function App() {
             <p className="font-semibold text-[#101B32] dark:text-slate-100">Role Switching Tip</p>
             <p>
               Use the User Profile menu in the header to switch between <strong>Administrator</strong>, <strong>Platform Producer</strong>, <strong>Developer</strong>, and <strong>Viewer</strong> accounts to test real server-side JWT RBAC enforcement and audit logging.
+            </p>
+          </div>
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
+            <p className="text-xs font-semibold text-[#101B32] dark:text-slate-100">
+              Offline Study & Client Presentation Downloads
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                disabled={exportingType !== null}
+                onClick={async () => {
+                  setExportingType('pdf');
+                  try {
+                    await downloadBinaryExport(
+                      '/api/exports/project-guide.pdf?download=1',
+                      'IPP_Complete_Project_Study_Guide.pdf'
+                    );
+                    pushToast('success', 'Study Guide PDF ready', 'IPP_Complete_Project_Study_Guide.pdf downloaded.');
+                  } catch (err) {
+                    pushToast('error', 'PDF download failed', err instanceof Error ? err.message : undefined);
+                  } finally {
+                    setExportingType(null);
+                  }
+                }}
+                className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B1221] hover:border-[#2457D6] dark:hover:border-[#438BFF] text-xs font-medium text-[#101B32] dark:text-slate-100 transition-colors disabled:opacity-60"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#2457D6] dark:text-[#438BFF] shrink-0" />
+                  <span>{exportingType === 'pdf' ? 'Generating PDF...' : 'Complete Study Guide (PDF)'}</span>
+                </span>
+                <Download className="w-3.5 h-3.5 text-[#65748B] shrink-0" />
+              </button>
+              <button
+                type="button"
+                disabled={exportingType !== null}
+                onClick={async () => {
+                  setExportingType('pptx');
+                  try {
+                    await downloadBinaryExport(
+                      '/api/exports/client-presentation.pptx',
+                      'IPP_Client_Presentation.pptx'
+                    );
+                    pushToast('success', 'Client Deck PPTX ready', 'IPP_Client_Presentation.pptx downloaded.');
+                  } catch (err) {
+                    pushToast('error', 'PPTX download failed', err instanceof Error ? err.message : undefined);
+                  } finally {
+                    setExportingType(null);
+                  }
+                }}
+                className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg bg-[#2457D6] hover:bg-[#1d48b8] text-xs font-medium text-white transition-colors disabled:opacity-60"
+              >
+                <span className="flex items-center gap-2">
+                  <Presentation className="w-4 h-4 shrink-0" />
+                  <span>{exportingType === 'pptx' ? 'Generating PPTX...' : 'Client Presentation (PPTX)'}</span>
+                </span>
+                <Download className="w-3.5 h-3.5 shrink-0" />
+              </button>
+            </div>
+            <p className="text-[11px] text-[#65748B] dark:text-slate-400">
+              If your preview iframe blocks downloads, open{' '}
+              <a
+                href="/api/exports/project-guide.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#2457D6] dark:text-[#438BFF] underline"
+              >
+                Study Guide PDF
+              </a>{' '}
+              or{' '}
+              <a
+                href="/api/exports/client-presentation.pptx"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#2457D6] dark:text-[#438BFF] underline"
+              >
+                Client PPTX
+              </a>{' '}
+              in a new browser tab.
             </p>
           </div>
         </div>
