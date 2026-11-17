@@ -1,0 +1,6 @@
+{
+  "name": "IPP — Internal Platforms Portal",
+  "description": "Enterprise developer experience platform unifying internal banking platforms, APIs, documentation, producer onboarding, capability management, and AI-assisted workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
